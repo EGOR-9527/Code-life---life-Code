@@ -1,0 +1,67 @@
+@font-face {
+    font-family: 'RubikWetPaint-Regular';
+    src: url('./RubikWetPaint-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+
+body {
+    background-color: #121214;
+    color: white;
+    font-family: Arial, sans-serif; /* Добавим шрифт для лучшего отображения */
+
+
+}
+
+
+
+.containerLogo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Центрируем по вертикали */
+}
+
+h1 {
+    font-size: 10vw; /* Размер шрифта */
+    white-space: nowrap; /* Запрет на перенос строки */
+    position: relative; /* Для позиционирования курсора */
+}
+
+.block{
+    display: flex;
+    width: 100%;
+    height: 10vw;
+    align-items: center;
+    justify-content: center;
+}
+
+.cursor {
+    display: inline-block; /* Чтобы анимация работала */
+    animation: blink 1s step-end infinite; /* Анимация мигания */
+}
+
+.blink {
+    animation: blink-animation 1s steps(5, start) infinite;
+}
+
+@keyframes blink-animation {
+    to {
+        visibility: hidden;
+    }
+}
+
+.glow {
+    animation: glow-animation 1s ease-in-out infinite alternate;
+}
+
+@keyframes glow-animation {
+    0% {
+        text-shadow: 0 0 2px white, 0 0 4px white, 0 0 6px white;
+    }
+    100% {
+        text-shadow: 0 0 2px white, 0 0 4px white, 0 0 6px white;
+    }
+}
