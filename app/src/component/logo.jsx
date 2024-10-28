@@ -6,6 +6,7 @@ const Logo = () => {
     { part1: "Code ", part2: "life" },
     { part1: "life ", part2: "Code" },
   ]; // Массив текстов для отображения
+
   const [displayedText, setDisplayedText] = useState({ part1: "", part2: "" });
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [writingIndex, setWritingIndex] = useState(0); // Индекс для написания текста
@@ -35,22 +36,32 @@ const Logo = () => {
             }
             setWritingIndex((prev) => prev + 1); // Увеличиваем индекс написания
           } else {
-            if (displayedText.part1 !== "life ") {
-              console.log(displayedText.part1);
-              setTimeout(() => {
-                setIsGlowing(true); // Начинаем свечение
-              }, 500); // Задержка в 1 секунду перед началом стирания
+            // Начинаем свечение и мигание текста
 
-              setTimeout(() => {
-                setIsGlowing(false); // Начинаем свечение
-              }, 600); // Задержка в 1 секунду перед началом стирания
+            if (displayedText.part1 !== 'life ') {
+              setIsGlowing(true); // Начинаем свечение
             }
 
+            // Задержка для мигания текста
+            const blinkDuration = 450; // Время мигания в миллисекундах
+            const blinkCount = 2; // Количество миганий
+
+            console.log(displayedText)
+
+            if (displayedText.part1 !== 'life ') {
+              for (let i = 0; i < blinkCount; i++) {
+                setTimeout(() => {
+                  setIsGlowing((prev) => !prev); // Переключаем свечение
+                }, i * blinkDuration); // Задержка для мигания
+              }
+            }
+
+            // После завершения мигания, начинаем стирать текст
             setTimeout(() => {
-              setIsGlowing(false); // Начинаем свечение
+              setIsGlowing(false); // Отключаем свечение
               setIsUnderlined(true); // Подчеркиваем текст после завершения написания
               setIsWriting(false); // Начинаем стирать текст
-            }, 1000); // Задержка в 1 секунду перед началом стирания
+            }, blinkCount * blinkDuration); // Задержка перед началом стирания
           }
         } else {
           if (writingIndex > 0) {
@@ -77,7 +88,7 @@ const Logo = () => {
         }
       },
       isWriting ? 400 : 200
-    ); // Задержка в 400 мс при написании и 200 мс при стирании
+    ); // Задержка в 400 м с при написании и 200 мс при стирании
 
     return () => clearInterval(interval); // Очистка интервала при размонтировании
   }, [isWriting, currentTextIndex, writingIndex]); // Зависимости для эффекта
@@ -98,7 +109,7 @@ const Logo = () => {
             <span className="roboto-thin">{displayedText.part1}</span>
           )}
           <span>{displayedText.part2}</span>
-          {isWriting && <span className="cursor">|</span>} {/* Курсор */}
+          {<span className="cursor">|</span>} {/* Курсор */}
         </h1>
       </div>
     </div>
