@@ -1,117 +1,274 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../component/index.css";
 
 const Logo = () => {
-  const texts = [
-    { part1: "Code ", part2: "life" },
-    { part1: "life ", part2: "Code" },
-  ]; // Массив текстов для отображения
-
-  const [displayedText, setDisplayedText] = useState({ part1: "", part2: "" });
-  const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [writingIndex, setWritingIndex] = useState(0); // Индекс для написания текста
-  const [isWriting, setIsWriting] = useState(true); // Состояние для отслеживания, пишем ли мы текст
-  const [isUnderlined, setIsUnderlined] = useState(false); // Состояние для подчеркивания текста
-  const [isGlowing, setIsGlowing] = useState(false); // Состояние для свечения текста
+  const [progress, setProgress] = useState(500); // Начальная ширина занавеса
+  const [cursorPosition, setCursorPosition] = useState(1000); // Начальная позиция курсора
+  const cursorRef = useRef(null);
+  const curtainRef = useRef(null);
+  const minWidth = (2.4 * window.innerWidth) / 100; // Минимальная ширина в пикселях
+  const maxWidth = 500; // Максимальная ширина
+  const [isExpanding, setIsExpanding] = useState(false); // Флаг для управления состоянием
+  const [isMovingLeft, setIsMovingLeft] = useState(true); // Флаг для направления курсора
+  const [animationStarted, setAnimationStarted] = useState(false); // Флаг для отслеживания начала анимации
+  const [backlight, setBacklight] = useState(0); // Подсветка текста
+  const [underline, setUnderline] = useState(false); // Подчеркивание текста
 
   useEffect(() => {
-    const fullText = texts[currentTextIndex]; // Текущий текст для отображения
+    // Задержка перед началом анимации
+    const timeout = setTimeout(() => {
+      setAnimationStarted(true);
+    }, 2500); // 2.5 секунды
 
-    const interval = setInterval(
-      () => {
-        if (isWriting) {
-          if (writingIndex < fullText.part1.length + fullText.part2.length) {
-            if (writingIndex < fullText.part1.length) {
-              setDisplayedText((prev) => ({
-                ...prev,
-                part1: fullText.part1.slice(0, writingIndex + 1),
-                part2: prev.part2,
-              })); // Обновление отображаемого текста для первой части
-            } else {
-              const part2Index = writingIndex - fullText.part1.length;
-              setDisplayedText({
-                part1: fullText.part1,
-                part2: fullText.part2.slice(0, part2Index + 1),
-              }); // Обновление отображаемого текста для второй части
-            }
-            setWritingIndex((prev) => prev + 1); // Увеличиваем индекс написания
-          } else {
-            // Начинаем свечение и мигание текста
+    return () => clearTimeout(timeout);
+  }, []);
 
-            if (displayedText.part1 !== 'life ') {
-              setIsGlowing(true); // Начинаем свечение
-            }
+  useEffect(() => {
+    if (!animationStarted) return; // Если анимация еще не началась, ничего не делаем
 
-            // Задержка для мигания текста
-            const blinkDuration = 450; // Время мигания в миллисекундах
-            const blinkCount = 2; // Количество миганий
+    const interval = setInterval(() => {
+      // Изменяем ширину занавеса
+      setProgress((prevProgress) => {
+        const step = isExpanding ? 1 : -1; // Определяем шаг
+        const newProgress = Math.min(
+          Math.max(prevProgress + step, minWidth),
+          maxWidth
+        );
 
-            console.log(displayedText)
+        // Условие для смены состояния
+        if (newProgress >= maxWidth) {
+          // Ждем 1 секунду перед изменением состояния
+          setTimeout(() => {
+            setIsExpanding(false);
+            setIsMovingLeft(true); // Сброс направления при достижении максимума
+          }, 1000); // Длительность видимости
+        } else if (newProgress <= minWidth) {
+          // Ждем 1 секунду перед изменением состояния
+          setBacklight(14);
 
-            if (displayedText.part1 !== 'life ') {
-              for (let i = 0; i < blinkCount; i++) {
-                setTimeout(() => {
-                  setIsGlowing((prev) => !prev); // Переключаем свечение
-                }, i * blinkDuration); // Задержка для мигания
-              }
-            }
+          // Устанавливаем underline через 1 секунду после backlight
+          setTimeout(() => {
+            setUnderline(true);
+          }, 1100); // Задержка в 1 секунду
 
-            // После завершения мигания, начинаем стирать текст
-            setTimeout(() => {
-              setIsGlowing(false); // Отключаем свечение
-              setIsUnderlined(true); // Подчеркиваем текст после завершения написания
-              setIsWriting(false); // Начинаем стирать текст
-            }, blinkCount * blinkDuration); // Задержка перед началом стирания
-          }
-        } else {
-          if (writingIndex > 0) {
-            if (writingIndex > fullText.part1.length) {
-              const part2Index = writingIndex - fullText.part1.length;
-              setDisplayedText((prev) => ({
-                part1: prev.part1,
-                part2: fullText.part2.slice(0, part2Index - 1),
-              })); // Стираем текст для второй части
-            } else {
-              setDisplayedText((prev) => ({
-                part1: prev.part1.slice(0, writingIndex - 1),
-                part2: prev.part2,
-              })); // Стираем текст для первой части
-            }
-            setWritingIndex((prev) => prev - 1); // Уменьшаем индекс написания
-          } else {
-            // Переход к следующему тексту
-            setIsUnderlined(false); // Убираем подчеркивание
-            setCurrentTextIndex((prev) => (prev + 1) % texts.length); // Переход к следующему тексту
-            setIsWriting(true); // Начинаем писать новый текст
-            setWritingIndex(0); // Сбрасываем индекс для нового текста
-          }
+          // Мигание курсора
+          setTimeout(() => {
+            setIsExpanding(true);
+            setIsMovingLeft(false); // Сброс направления при достижении минимума
+          }, 1000); // Ждем 1 секунду перед увеличением
+
+          setTimeout(() => {
+            setBacklight(0);
+          }, 880);
+
+          setTimeout(() => {
+            setUnderline(false); // Убираем underline
+          }, 3500);
         }
-      },
-      isWriting ? 400 : 200
-    ); // Задержка в 400 м с при написании и 200 мс при стирании
 
-    return () => clearInterval(interval); // Очистка интервала при размонтировании
-  }, [isWriting, currentTextIndex, writingIndex]); // Зависимости для эффекта
+        return newProgress;
+      });
+
+      // Изменяем позицию курсора
+      setCursorPosition((prevCursor) => {
+        const step = isMovingLeft ? -2.1 : 2.1; // Определяем шаг
+        const newCursorPosition = Math.min(
+          Math.max(prevCursor + step, 0),
+          1000
+        ); // Ограничиваем курсор в пределах 0 и 1000
+
+        // Условие для смены направления
+        if (newCursorPosition <= 0 || newCursorPosition >= 1000) {
+          setIsMovingLeft((prev) => !prev); // Меняем направление
+        }
+
+        return newCursorPosition;
+      });
+    }, 6); // Скорость изменения
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isExpanding, minWidth, maxWidth, isMovingLeft, animationStarted]);
+
+  useEffect(() => {
+    if (animationStarted !== false) {
+      setTimeout(() => {
+        cursorRef.current.style.opacity = 0;
+      }, 3000);
+
+      setTimeout(() => {
+        cursorRef.current.style.opacity = 1;
+      }, 3500);
+    }
+  }, [isMovingLeft]);
+
+  useEffect(() => {
+    if (cursorRef.current && curtainRef.current) {
+      curtainRef.current.style.transform = `scaleX(${progress / maxWidth})`; // Уменьшаем ширину занавеса
+      curtainRef.current.style.transformOrigin = "right"; // Устанавливаем точку трансформации на правую сторону
+      cursorRef.current.style.right = `${cursorPosition}px`; // Двигаем курсор влево или вправо
+
+      console.log("cursorRef: " + cursorPosition, "curtainRef: " + progress / maxWidth)
+    }
+  }, [cursorPosition, progress]);
 
   return (
     <div className="containerLogo">
-      <div
-        style={{
-          backgroundColor: isUnderlined ? "underline" : "none ",
-          backgroundColor: isUnderlined ? "#492525" : "#121214",
-        }}
-        className="block"
-      >
-        <h1>
-          {isGlowing ? (
-            <span className={`roboto-thin glow`}>{displayedText.part1}</span>
-          ) : (
-            <span className="roboto-thin">{displayedText.part1}</span>
-          )}
-          <span>{displayedText.part2}</span>
-          {<span className="cursor">|</span>} {/* Курсор */}
-        </h1>
-      </div>
+      {underline ? <div className="Underline">.</div> : null}
+
+      <span className="Codelife">
+        <svg
+          width="906"
+          height="207"
+          viewBox="0 0 906 207"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <g filter="url(#filter0_d_0_1)">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M753.968 178.845V87.7857H736.913V72.6763H753.968V61.3947C753.968 53.4371 755.059 46.9904 757.241 41.9539C759.422 36.9175 762.893 33.1905 767.752 30.773C772.61 28.3555 778.957 27.1467 786.889 27.1467H798.789V42.2561H788.674C783.915 42.2561 780.246 43.0619 777.668 44.6736C775.089 46.2853 773.305 48.7028 772.313 51.8254C771.321 54.948 770.826 58.8764 770.826 63.4092V72.6763H798.789V87.7857H770.826V178.845H753.968ZM700.52 53.7375C702.603 55.8528 705.28 56.9609 708.75 56.9609C711.924 56.9609 714.601 55.8528 716.882 53.7375C719.162 51.6222 720.253 48.7011 720.253 45.4777C720.253 42.2544 719.063 39.5347 716.783 37.4194C714.502 35.3041 711.824 34.1961 708.75 34.1961C705.478 34.1961 702.702 35.2033 700.619 37.3187C698.537 39.434 697.446 42.1537 697.446 45.4777C697.446 48.8018 698.438 51.6222 700.52 53.7375ZM700.421 72.6746V178.843H717.278V72.6746H700.421ZM590.552 36.4133V178.844H684.754V162.929H607.806V36.4133H590.552ZM832.103 173.103C839.342 177.736 848.564 180.053 859.669 180.053C866.313 180.053 872.659 179.046 878.708 176.931C884.757 174.815 890.012 171.592 894.375 167.261C898.738 162.929 901.713 157.288 903.3 150.439H886.046C884.856 154.065 882.873 156.986 879.997 159.102C877.122 161.217 873.948 162.728 870.478 163.634C867.007 164.541 863.537 164.944 860.066 164.944C853.224 164.944 847.473 163.534 842.812 160.612C838.152 157.691 834.582 153.763 832.103 148.827C829.624 143.891 828.037 138.251 827.542 132.106H905.085L905.382 128.48L905.68 124.854C905.977 118.508 905.184 112.262 903.498 106.017C901.812 99.772 899.036 94.0304 895.169 88.7925C891.301 83.5546 886.443 79.324 880.592 76.2014C874.742 73.0788 867.701 71.4671 859.471 71.4671C848.861 71.4671 839.937 73.7839 832.698 78.5181C825.459 83.2524 819.906 89.5984 816.138 97.7574C812.37 105.917 810.486 115.385 810.486 125.861C810.486 136.337 812.271 145.705 815.841 153.864C819.411 162.023 824.864 168.469 832.103 173.103ZM888.426 117.198H827.938C828.434 111.658 829.921 106.622 832.301 102.089C834.681 97.556 838.053 93.829 842.515 91.0086C846.977 88.1882 852.431 86.7779 858.876 86.7779C864.826 86.7779 869.982 88.0874 874.246 90.6057C878.51 93.1239 881.98 96.7501 884.459 101.283C886.938 105.816 888.327 111.154 888.426 117.198Z"
+              fill="white"
+            />
+          </g>
+          <g filter="url(#filter1_d_0_1)">
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M60.2441 167.291C70.1601 173.436 82.3568 176.458 96.9333 176.458C107.345 176.458 116.765 174.644 125.194 171.119C133.622 167.593 140.564 162.456 146.017 155.707C151.471 148.958 155.041 140.9 156.628 131.331H131.441C130.251 135.763 128.069 139.591 124.996 142.915C121.922 146.239 118.054 148.757 113.493 150.469C108.932 152.182 103.577 153.088 97.5282 153.088C87.7114 153.088 79.7786 150.772 73.5316 146.037C67.2845 141.303 62.8223 135.159 59.9466 127.503C57.071 119.848 55.6828 111.386 55.6828 102.925C55.6828 94.4639 57.071 86.5063 59.7483 79.1531C62.4256 71.7998 66.8878 65.7561 72.9366 61.0218C78.9853 56.2875 87.0173 53.9707 96.9333 53.9707C106.056 53.9707 113.493 55.8846 119.145 59.813C124.797 63.7415 128.565 69.0801 130.449 75.9297H154.446C152.959 66.2597 149.686 58.1006 144.629 51.4525C139.572 44.8044 132.928 39.6672 124.896 36.0409C116.864 32.4147 107.543 30.6016 96.9333 30.6016C82.6543 30.6016 70.5568 33.7242 60.6408 39.9694C50.7248 46.2146 43.1886 54.8773 38.0323 65.8568C32.876 76.8363 30.2979 89.5282 30.2979 103.932C30.2979 118.337 32.7768 130.928 37.834 141.807C42.8912 152.685 50.3281 161.147 60.2441 167.291ZM195.202 169.608C202.936 174.04 212.158 176.256 222.867 176.256C233.577 176.256 242.799 174.04 250.434 169.608C258.069 165.176 263.92 158.93 267.985 150.771C272.051 142.612 274.034 133.446 274.034 122.265C274.034 111.084 271.952 101.414 267.886 93.1541C263.82 84.8943 257.871 78.4477 250.236 73.9148C242.6 69.382 233.577 67.0653 222.867 67.0653C212.158 67.0653 202.936 69.382 195.301 73.9148C187.666 78.4477 181.716 84.7936 177.452 92.9527C173.188 101.112 171.106 110.882 171.106 121.862C171.106 132.841 173.188 142.511 177.353 150.671C181.518 158.83 187.467 165.176 195.202 169.608ZM238.634 149.462C234.568 152.383 229.313 153.894 222.669 153.894C216.025 153.894 210.77 152.484 206.704 149.563C202.639 146.641 199.664 142.814 197.78 137.878C195.896 132.942 194.904 127.805 194.904 122.063C194.904 116.322 195.797 110.983 197.681 106.047C199.565 101.112 202.54 97.1833 206.605 94.1614C210.671 91.1395 216.025 89.6286 222.669 89.6286C229.313 89.6286 234.568 91.1395 238.634 94.1614C242.699 97.1833 245.575 101.212 247.459 106.148C249.343 111.084 250.236 116.423 250.236 122.063C250.236 127.704 249.343 132.942 247.459 137.777C245.575 142.612 242.699 146.541 238.634 149.462ZM336.106 176.255C325.496 176.255 316.77 173.838 309.928 168.902C303.086 163.966 297.93 157.419 294.558 149.26C291.187 141.101 289.501 131.934 289.501 121.861C289.501 111.789 291.286 102.018 294.856 93.758C298.425 85.4982 303.78 78.9508 310.919 74.2165C318.059 69.4823 326.983 67.0648 337.693 67.0648C341.659 67.0648 345.526 67.4677 349.294 68.3742C353.062 69.2808 356.632 70.5903 360.004 72.4034C363.375 74.2165 366.152 76.634 368.432 79.5552V32.4139H392.627V174.845H369.225L368.829 161.549C366.35 164.873 363.375 167.693 360.004 169.809C356.632 171.924 352.864 173.536 348.799 174.644C344.733 175.752 340.469 176.255 336.106 176.255ZM340.667 154.095C347.014 154.095 352.269 152.584 356.335 149.562C360.4 146.54 363.474 142.511 365.557 137.475C367.639 132.438 368.631 127.099 368.631 121.459C368.631 115.516 367.639 110.177 365.557 105.342C363.474 100.507 360.4 96.5784 356.335 93.6573C352.269 90.7361 347.014 89.2252 340.667 89.2252C333.925 89.2252 328.57 90.7361 324.703 93.8587C320.835 96.9814 317.96 101.011 316.175 106.047C314.39 111.083 313.498 116.523 313.498 122.264C313.498 126.596 313.993 130.625 314.985 134.453C315.977 138.28 317.563 141.705 319.646 144.626C321.728 147.547 324.504 149.864 327.975 151.577C331.446 153.289 335.61 154.095 340.667 154.095ZM435.17 169.406C442.805 173.939 452.027 176.256 462.835 176.256C469.975 176.256 476.718 175.148 483.163 172.831C489.608 170.514 495.062 166.989 499.723 162.154C504.383 157.319 507.556 151.073 509.242 143.418H485.047C484.254 146.138 482.667 148.354 480.387 150.066C478.106 151.778 475.429 153.088 472.355 153.995C469.281 154.901 466.108 155.304 462.835 155.304C457.183 155.304 452.423 154.196 448.655 151.879C444.887 149.562 442.012 146.541 439.929 142.612C437.847 138.684 436.657 134.453 436.26 129.719H509.639C509.936 128.006 510.135 126.294 510.234 124.783C510.281 124.065 510.35 123.325 510.421 122.573C510.499 121.741 510.578 120.895 510.63 120.049C510.729 113.098 509.837 106.45 507.854 100.104C505.871 93.7584 502.896 88.1176 498.83 83.1819C494.765 78.2461 489.807 74.3177 483.857 71.3965C477.908 68.4754 470.966 67.0652 463.034 67.0652C452.324 67.0652 443.202 69.382 435.566 74.1162C427.931 78.8505 422.18 85.2972 418.114 93.557C414.049 101.817 412.065 111.285 412.065 122.063C412.065 132.841 414.049 142.209 417.916 150.368C421.783 158.527 427.534 164.873 435.17 169.406ZM487.03 111.386H436.657C436.955 107.357 438.045 103.529 440.029 99.9029C442.012 96.2767 444.887 93.3555 448.556 91.0388C452.225 88.722 456.886 87.614 462.439 87.614C467.595 87.614 471.958 88.6213 475.627 90.7366C479.296 92.8519 482.072 95.6723 484.055 99.2986C486.039 102.925 487.03 106.954 487.03 111.386Z"
+              fill="white"
+            />
+          </g>
+          <defs>
+            <filter
+              id="filter0_d_0_1"
+              x="590.552"
+              y="27.1467"
+              width="315.189"
+              height="162.778"
+              filterUnits="userSpaceOnUse"
+              color-interpolation-filters="sRGB"
+            >
+              <feFlood flood-opacity="0" result="BackgroundImageFix" />
+              <feColorMatrix
+                in="SourceAlpha"
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                result="hardAlpha"
+              />
+              <feOffset dy="9.87147" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+              />
+              <feBlend
+                mode="normal"
+                in2="BackgroundImageFix"
+                result="effect1_dropShadow_0_1"
+              />
+              <feBlend
+                mode="normal"
+                in="SourceGraphic"
+                in2="effect1_dropShadow_0_1"
+                result="shape"
+              />
+            </filter>
+            <filter
+              id="filter1_d_0_1"
+              x="0.683455"
+              y="0.987165"
+              width="539.569"
+              height="205.085"
+              filterUnits="userSpaceOnUse"
+              color-interpolation-filters="sRGB"
+            >
+              <feFlood flood-opacity="0" result="BackgroundImageFix" />
+              <feColorMatrix
+                in="SourceAlpha"
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                result="hardAlpha"
+              />
+              <feOffset />
+              <feGaussianBlur stdDeviation={backlight} />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix
+                type="matrix"
+                values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0"
+              />
+              <feBlend
+                mode="normal"
+                in2="BackgroundImageFix"
+                result="effect1_dropShadow_0_1"
+              />
+              <feBlend
+                mode="normal"
+                in="SourceGraphic"
+                in2="effect1_dropShadow_0_1"
+                result="shape"
+              />
+            </filter>
+          </defs>
+        </svg>
+      </span>
+
+      <span className="cursor" ref={cursorRef}>
+        <svg
+          width="12"
+          height="208"
+          viewBox="0 0 12 208"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <g filter="url(#filter0_d_2031_525)">
+            <path
+              d="M0.398682 197.429V0H11.7029V197.429H0.398682Z"
+              fill="white"
+            />
+          </g>
+          <defs>
+            <filter
+              id="filter0_d_2031_525"
+              x="0.398682"
+              y="0"
+              width="11.3042"
+              height="207.301"
+              filterUnits="userSpaceOnUse"
+              color-interpolation-filters="sRGB"
+            >
+              <feFlood flood-opacity="0" result="BackgroundImageFix" />
+              <feColorMatrix
+                in="SourceAlpha"
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                result="hardAlpha"
+              />
+              <feOffset dy="9.87147" />
+              <feComposite in2="hardAlpha" operator="out" />
+              <feColorMatrix
+                type="matrix"
+                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+              />
+              <feBlend
+                mode="normal"
+                in2="BackgroundImageFix"
+                result="effect1_dropShadow_2031_525"
+              />
+              <feBlend
+                mode="normal"
+                in="SourceGraphic"
+                in2="effect1_dropShadow_2031_525"
+                result="shape"
+              />
+            </filter>
+          </defs>
+        </svg>
+      </span>
+
+      <span className="curtain" ref={curtainRef}></span>
     </div>
   );
 };
